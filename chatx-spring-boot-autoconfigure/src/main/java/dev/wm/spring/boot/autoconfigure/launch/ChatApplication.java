@@ -1,6 +1,7 @@
 package dev.wm.spring.boot.autoconfigure.launch;
 
 import dev.wm.spring.boot.autoconfigure.annotation.Handler;
+import dev.wm.spring.boot.autoconfigure.broadcast.Broadcaster;
 import dev.wm.spring.boot.autoconfigure.codec.ChatCodec;
 import dev.wm.spring.boot.autoconfigure.configure.NettyProperties;
 import dev.wm.spring.boot.autoconfigure.exceptions.InvalidHandlerException;
@@ -10,7 +11,6 @@ import dev.wm.spring.boot.autoconfigure.handler.GatewayHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -46,7 +46,7 @@ public class ChatApplication implements ApplicationRunner, ApplicationContextAwa
 
     private final NettyProperties nettyProperties;
 
-    private final ChannelGroup channelGroup = new DefaultChannelGroup("channel-group", new DefaultEventLoop());
+    private Broadcaster broadcaster;
 
     public ChatApplication(NettyProperties nettyProperties) {
         this.nettyProperties = nettyProperties;
@@ -57,7 +57,6 @@ public class ChatApplication implements ApplicationRunner, ApplicationContextAwa
         this.applicationContext = applicationContext;
     }
 
-
     @Override
     public void destroy() throws Exception {
         log.info("chatx server shutdown now");
@@ -67,6 +66,7 @@ public class ChatApplication implements ApplicationRunner, ApplicationContextAwa
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        this.broadcaster = applicationContext.getBean(Broadcaster.class);
         this.serverLoop = new NioEventLoopGroup(nettyProperties.getServerLoopNum());
         this.workerLoop = new NioEventLoopGroup(nettyProperties.getWorkerLoopNum());
         Map<Integer, AbstractHandler> handlers = getHandlers();
@@ -74,6 +74,7 @@ public class ChatApplication implements ApplicationRunner, ApplicationContextAwa
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler())
                 .option(ChannelOption.SO_BACKLOG, 128)
+                .childOption(ChannelOption.SO_TIMEOUT, 10)
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
@@ -86,7 +87,7 @@ public class ChatApplication implements ApplicationRunner, ApplicationContextAwa
                         pipeline.addLast(
                                 new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, nettyProperties.getPacketMaxBytes(), 0, 4, -4, 0, false),
                                 new ChatCodec(),
-                                new GatewayHandler(handlers, channelGroup)
+                                new GatewayHandler(handlers, broadcaster)
                         );
                     }
                 }).childOption(ChannelOption.SO_KEEPALIVE, true).childOption(ChannelOption.TCP_NODELAY, true);
@@ -106,11 +107,12 @@ public class ChatApplication implements ApplicationRunner, ApplicationContextAwa
             if (annotation == null) {
                 throw new InvalidHandlerException("command handler must with Handler annotation");
             }
-            command.setChannelGroup(channelGroup);
+            command.setChannelGroup(broadcaster);
             command.setLoginRequired(annotation.auth());
             respResult.put(annotation.command(), (T) command);
         }
         return respResult;
     }
+
 
 }

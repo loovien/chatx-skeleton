@@ -1,8 +1,8 @@
 package dev.wm.spring.boot.autoconfigure.handler;
 
+import dev.wm.spring.boot.autoconfigure.broadcast.Broadcaster;
 import dev.wm.spring.boot.autoconfigure.domain.Payload;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.group.ChannelGroup;
 
 /**
  * @author luowen <loovien@163.com>
@@ -31,7 +31,7 @@ public interface CommandHandler {
      *
      * @param channelGroup channelGroup
      */
-    void setChannelGroup(ChannelGroup channelGroup);
+    void setChannelGroup(Broadcaster channelGroup);
 
 
 }

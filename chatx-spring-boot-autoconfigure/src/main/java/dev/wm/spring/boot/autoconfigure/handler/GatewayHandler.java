@@ -1,10 +1,10 @@
 package dev.wm.spring.boot.autoconfigure.handler;
 
+import dev.wm.spring.boot.autoconfigure.broadcast.Broadcaster;
 import dev.wm.spring.boot.autoconfigure.domain.Payload;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.group.ChannelGroup;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -17,12 +17,12 @@ import java.util.Map;
 @ChannelHandler.Sharable
 public class GatewayHandler extends SimpleChannelInboundHandler<Payload> {
 
-    private final ChannelGroup channelGroup;
+    private final Broadcaster broadcast;
 
     private final Map<Integer, AbstractHandler> handlers;
 
-    public GatewayHandler(Map<Integer, AbstractHandler> handlers, ChannelGroup channelGroup) {
-        this.channelGroup = channelGroup;
+    public GatewayHandler(Map<Integer, AbstractHandler> handlers, Broadcaster channelGroup) {
+        this.broadcast = channelGroup;
         this.handlers = handlers;
     }
 
@@ -30,7 +30,7 @@ public class GatewayHandler extends SimpleChannelInboundHandler<Payload> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
         log.info("client channel connect server, client ip: {} ", ctx.channel().remoteAddress());
-        channelGroup.add(ctx.channel());
+        broadcast.getChannelGroup().add(ctx.channel());
     }
 
     @Override

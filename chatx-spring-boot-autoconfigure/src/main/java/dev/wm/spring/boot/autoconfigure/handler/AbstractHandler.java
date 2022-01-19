@@ -1,5 +1,7 @@
 package dev.wm.spring.boot.autoconfigure.handler;
 
+import dev.wm.spring.boot.autoconfigure.broadcast.Broadcaster;
+import dev.wm.spring.boot.autoconfigure.constants.ChannelKey;
 import dev.wm.spring.boot.autoconfigure.domain.Payload;
 import dev.wm.spring.boot.autoconfigure.exceptions.NotLoginException;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,7 +18,7 @@ public abstract class AbstractHandler implements CommandHandler {
 
     protected boolean authorization;
 
-    private ChannelGroup channelGroup;
+    private Broadcaster channelGroup;
 
     @Override
     public void handler(ChannelHandlerContext channelHandlerContext, Payload payload) {
@@ -24,13 +26,13 @@ public abstract class AbstractHandler implements CommandHandler {
         handler(channelHandlerContext, payload, channelGroup);
     }
 
-    protected abstract void handler(ChannelHandlerContext channelHandlerContext, Payload payload, ChannelGroup channelGroup);
+    protected abstract void handler(ChannelHandlerContext channelHandlerContext, Payload payload, Broadcaster channelGroup);
 
     private void preHandler(ChannelHandlerContext channelHandlerContext, Payload payload) {
         if (!this.authorization) {
             return;
         }
-        if (!channelHandlerContext.channel().hasAttr(AttributeKey.valueOf("USER"))) {
+        if (!channelHandlerContext.channel().hasAttr(AttributeKey.valueOf(ChannelKey.USER))) {
             log.error("socket not authorization yet, closed it, {}", channelHandlerContext.channel().remoteAddress());
             channelHandlerContext.channel().close();
             throw new NotLoginException("not authorization");
@@ -43,7 +45,7 @@ public abstract class AbstractHandler implements CommandHandler {
     }
 
     @Override
-    public void setChannelGroup(ChannelGroup channelGroup) {
+    public void setChannelGroup(Broadcaster channelGroup) {
         this.channelGroup = channelGroup;
     }
 }
