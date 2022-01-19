@@ -21,4 +21,6 @@ public class NettyProperties {
 
     private Integer packetMaxBytes;
 
+    private String broadcast;
+
 }
