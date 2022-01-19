@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "chatx.server.address",
+      "type": "java.lang.String",
+      "description": "netty server address"
+    },
+    {
+      "name": "chatx.server.port",
+      "type": "java.lang.Integer",
+      "description": "netty server port"
+    }
+  ]
+}
