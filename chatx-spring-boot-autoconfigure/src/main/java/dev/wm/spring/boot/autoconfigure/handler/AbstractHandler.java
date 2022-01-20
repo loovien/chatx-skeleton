@@ -5,7 +5,6 @@ import dev.wm.spring.boot.autoconfigure.constants.ChannelKey;
 import dev.wm.spring.boot.autoconfigure.domain.Payload;
 import dev.wm.spring.boot.autoconfigure.exceptions.NotLoginException;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.group.ChannelGroup;
 import io.netty.util.AttributeKey;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,9 +25,22 @@ public abstract class AbstractHandler implements CommandHandler {
         handler(channelHandlerContext, payload, channelGroup);
     }
 
+    /**
+     * sub class implement specific logic
+     *
+     * @param channelHandlerContext channelHandlerContext
+     * @param payload               payload
+     * @param channelGroup          channelGroup
+     */
     protected abstract void handler(ChannelHandlerContext channelHandlerContext, Payload payload, Broadcaster channelGroup);
 
-    private void preHandler(ChannelHandlerContext channelHandlerContext, Payload payload) {
+    /**
+     * subClass can override this method to implement complex authorization logic
+     *
+     * @param channelHandlerContext channelHandlerContext
+     * @param payload               payload
+     */
+    protected void preHandler(ChannelHandlerContext channelHandlerContext, Payload payload) {
         if (!this.authorization) {
             return;
         }

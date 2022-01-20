@@ -9,12 +9,18 @@ import dev.wm.spring.boot.autoconfigure.handler.AbstractHandler;
 import dev.wm.spring.boot.autoconfigure.handler.CommandHandler;
 import dev.wm.spring.boot.autoconfigure.handler.GatewayHandler;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
-import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +45,10 @@ import java.util.Map;
 @Data
 @Slf4j
 @Component
-@ConditionalOnProperty(prefix = "chatx.server", name = "mode", havingValue = "tcp")
-public class ChatApplication extends AbstractApplication {
+@ConditionalOnProperty(prefix = "chatx.server", name = "mode", havingValue = "websocket")
+public class WebsocketChatApplication extends AbstractApplication {
 
-    public ChatApplication(NettyProperties nettyProperties) {
+    public WebsocketChatApplication(NettyProperties nettyProperties) {
         this.nettyProperties = nettyProperties;
     }
 
@@ -62,21 +68,18 @@ public class ChatApplication extends AbstractApplication {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             ChannelPipeline pipeline = socketChannel.pipeline();
-                            if (pipeline == null) {
-                                log.error("invalid client connect server");
-                                return;
-                            }
-                            log.info("add channel handler");
                             pipeline.addLast(
-                                    new LengthFieldBasedFrameDecoder(ByteOrder.LITTLE_ENDIAN, nettyProperties.getPacketMaxBytes(), 0, 4, -4, 0, false),
-                                    new ChatCodec(),
+                                    new HttpServerCodec(),
+                                    new HttpObjectAggregator(nettyProperties.getPacketMaxBytes()),
+                                    new WebSocketServerCompressionHandler(),
+                                    new WebSocketServerProtocolHandler(nettyProperties.getWebsocketPath(), null, true),
                                     new GatewayHandler(handlers, broadcaster)
                             );
                         }
                     })
                     .childOption(ChannelOption.SO_KEEPALIVE, nettyProperties.getOptionSoKeepalive())
                     .childOption(ChannelOption.TCP_NODELAY, nettyProperties.getOptionTcpNoDelay());
-            log.info("chatx server start at: {}, {}", nettyProperties.getAddress(), nettyProperties.getPort());
+            log.info("chatx websocket server start at: {}, {}", nettyProperties.getAddress(), nettyProperties.getPort());
             try {
                 ChannelFuture closeFuture = serverBootstrap.bind(new InetSocketAddress(nettyProperties.getAddress(), nettyProperties.getPort())).sync();
                 closeFuture.channel().closeFuture().sync();
@@ -87,6 +90,5 @@ public class ChatApplication extends AbstractApplication {
             log.info("server closed, now shutdown");
         });
     }
-
 
 }

@@ -21,6 +21,15 @@ public class NettyProperties {
 
     private Integer packetMaxBytes;
 
+    private String mode;
+
+    private String websocketPath;
+
     private String broadcast;
 
+    private Integer optionSoBacklog = 128;
+
+    private Boolean optionSoKeepalive = true;
+
+    private Boolean optionTcpNoDelay = true;
 }
